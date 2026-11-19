@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}{{ medicament.nom }}{% endblock %}
+{% block titre_page %}Fiche médicament{% endblock %}
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'liste_medicaments' %}"><i class="bi bi-arrow-left"></i> Retour</a>
+  {% if user.est_administrateur or user.role == 'PHARMACIEN' or user.role == 'GESTIONNAIRE' %}
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary btn-sm" href="{% url 'modifier_medicament' medicament.pk %}"><i class="bi bi-pencil"></i> Modifier</a>
+    {% if medicament.statut == 'ACTIF' %}
+    <form method="post" action="{% url 'archiver_medicament' medicament.pk %}" onsubmit="return confirm('Archiver ce médicament ?');">
+      {% csrf_token %}
+      <button class="btn btn-outline-warning btn-sm" type="submit"><i class="bi bi-archive"></i> Archiver</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body text-center">
+        {% if medicament.photo %}
+          <img src="{{ medicament.photo.url }}" class="med-photo-large mb-3" alt="{{ medicament.nom }}">
+        {% else %}
+          <div class="med-photo-large d-flex align-items-center justify-content-center mb-3 text-muted">
+            <i class="bi bi-capsule" style="font-size:3rem"></i>
+          </div>
+        {% endif %}
+        <h2 class="h5">{{ medicament.nom }}</h2>
+        <p class="text-muted mb-2">{{ medicament.denomination_generique }}</p>
+        <span class="badge {% if medicament.statut == 'ACTIF' %}bg-success{% else %}bg-secondary{% endif %}">{{ medicament.get_statut_display }}</span>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between"><span>Catégorie</span><strong>{{ medicament.categorie.nom }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Forme</span><strong>{{ medicament.get_forme_display }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Dosage</span><strong>{{ medicament.dosage|default:"-" }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Laboratoire</span><strong>{{ medicament.laboratoire|default:"-" }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Code-barres</span><strong>{{ medicament.code_barres|default:"-" }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Prix d'achat</span><strong>{{ medicament.prix_achat|ariary }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Prix de vente</span><strong>{{ medicament.prix_vente|ariary }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Marge unitaire</span><strong>{{ medicament.marge_unitaire|ariary }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Stock disponible</span><span class="badge {{ medicament|badge_stock }}">{{ medicament.stock_disponible }}</span></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Seuil d'alerte</span><strong>{{ medicament.seuil_alerte }}</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Lots en stock</span>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'liste_lots' %}?q={{ medicament.nom }}">Gérer les lots</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead><tr><th>Lot</th><th>Péremption</th><th class="text-center">Quantité</th><th>État</th><th></th></tr></thead>
+          <tbody>
+          {% for lot in lots %}
+            <tr>
+              <td>{{ lot.numero_lot }}</td>
+              <td>{{ lot.date_peremption|date:"d/m/Y" }}</td>
+              <td class="text-center">{{ lot.quantite }}</td>
+              <td>
+                {% if lot.bloque %}<span class="badge bg-secondary">Bloqué</span>
+                {% elif lot.est_perime %}<span class="badge bg-danger">Périmé</span>
+                {% elif lot.quantite == 0 %}<span class="badge bg-dark">Épuisé</span>
+                {% else %}<span class="badge bg-success">Disponible</span>{% endif %}
+              </td>
+              <td class="text-end">
+                {% if user.est_administrateur or user.role == 'PHARMACIEN' or user.role == 'GESTIONNAIRE' %}
+                <form method="post" action="{% url 'basculer_lot' lot.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="suivant" value="{% url 'detail_medicament' medicament.pk %}">
+                  <button class="btn btn-sm btn-outline-secondary" type="submit" title="Bloquer / débloquer">
+                    <i class="bi bi-lock{% if lot.bloque %}-fill{% endif %}"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Aucun lot enregistré.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span>Derniers mouvements de stock</span>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'liste_mouvements' %}?q={{ medicament.nom }}">Historique</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+          <thead><tr><th>Date</th><th>Type</th><th>Lot</th><th class="text-end">Quantité</th><th>Motif</th><th>Utilisateur</th></tr></thead>
+          <tbody>
+          {% for mouvement in mouvements %}
+            <tr>
+              <td>{{ mouvement.date|date:"d/m/Y H:i" }}</td>
+              <td>{{ mouvement.get_type_display }}</td>
+              <td>{{ mouvement.lot.numero_lot|default:"-" }}</td>
+              <td class="text-end {{ mouvement.quantite|sens_mouvement }}">{{ mouvement.quantite }}</td>
+              <td>{{ mouvement.motif|default:"-" }}</td>
+              <td>{{ mouvement.utilisateur|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">Aucun mouvement.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

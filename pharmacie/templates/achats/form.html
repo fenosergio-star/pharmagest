@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}{{ titre }}{% endblock %}
+{% block titre_page %}{{ titre }}{% endblock %}
+{% block contenu %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="card mb-3">
+        <div class="card-header">Informations de la commande</div>
+        <div class="card-body">
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label" for="{{ form.fournisseur.id_for_label }}">Fournisseur <span class="text-danger">*</span></label>
+                {{ form.fournisseur|form_control }}
+                {% for error in form.fournisseur.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                {{ form.notes|form_control }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header">Lignes de commande</div>
+        <div class="card-body">
+          {{ formset.management_form }}
+          {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+          <div class="table-responsive">
+            <table class="table align-middle" id="table-lignes">
+              <thead><tr><th>Médicament</th><th style="width:120px">Quantité</th><th style="width:160px">Prix d'achat</th><th style="width:80px">Suppr.</th></tr></thead>
+              <tbody>
+              {% for ligne_form in formset %}
+                <tr>
+                  {% for hidden in ligne_form.hidden_fields %}{{ hidden }}{% endfor %}
+                  <td>
+                    {{ ligne_form.medicament|form_control }}
+                    {% for error in ligne_form.medicament.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                  </td>
+                  <td>
+                    {{ ligne_form.quantite|form_control }}
+                    {% for error in ligne_form.quantite.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                  </td>
+                  <td>
+                    {{ ligne_form.prix_achat|form_control }}
+                    {% for error in ligne_form.prix_achat.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                  </td>
+                  <td class="text-center">
+                    {% if ligne_form.instance.pk %}{{ ligne_form.DELETE }}{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="small text-muted">La commande est enregistrée en brouillon. Le stock ne sera modifié qu'à la réception.</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Enregistrer le brouillon</button>
+      <a class="btn btn-outline-secondary" href="{% if commande.pk %}{% url 'detail_commande' commande.pk %}{% else %}{% url 'liste_commandes' %}{% endif %}">Annuler</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

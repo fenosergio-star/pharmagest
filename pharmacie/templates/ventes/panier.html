@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Panier{% endblock %}
+{% block titre_page %}Panier de vente{% endblock %}
+{% block sous_titre %}Vérifiez les articles puis choisissez le mode de paiement{% endblock %}
+{% block contenu %}
+<div class="page-head mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <span class="page-head-icon"><i class="bi bi-cart-check"></i></span>
+    <div>
+      <h2>Panier de vente</h2>
+      <p>{{ nombre_panier }} article(s) · total à régler {{ total|ariary }}</p>
+    </div>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'caisse' %}"><i class="bi bi-plus-lg me-1"></i> Continuer les achats</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Articles du panier</span>
+        <span class="badge bg-light border">{{ nombre_panier }} article(s)</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-panier align-middle">
+          <thead><tr><th>Médicament</th><th>Lot</th><th class="text-center">Qté</th><th class="text-end">Prix</th><th class="text-end">Sous-total</th><th></th></tr></thead>
+          <tbody>
+          {% for element in elements %}
+            <tr class="{% if element.probleme %}table-danger{% endif %}">
+              <td>
+                <span class="fw-semibold">{{ element.lot.medicament.nom }}</span>
+                <div class="small text-muted">{{ element.lot.medicament.dosage }}</div>
+                {% if element.probleme %}<div class="small text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Stock insuffisant ou lot non délivrable.</div>{% endif %}
+              </td>
+              <td>{{ element.lot.numero_lot }}<div class="small text-muted">{{ element.lot.date_peremption|date:"d/m/Y" }}</div></td>
+              <td class="text-center">{{ element.quantite }}</td>
+              <td class="text-end">{{ element.prix|ariary }}</td>
+              <td class="text-end fw-semibold">{{ element.sous_total|ariary }}</td>
+              <td class="text-end">
+                <form method="post" action="{% url 'retirer_du_panier' element.lot.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger" type="submit" title="Retirer du panier"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="skeleton-empty">Le panier est vide. <a href="{% url 'caisse' %}">Retour à la caisse</a></td></tr>
+          {% endfor %}
+          </tbody>
+          <tfoot><tr><th colspan="4" class="text-end">Total</th><th class="text-end fs-6">{{ total|ariary }}</th><th></th></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">Validation de la vente</div>
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
+          <span class="stat-label">Total à régler</span>
+          <span class="fs-4 fw-bold text-primary">{{ total|ariary }}</span>
+        </div>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "partials/form.html" %}
+          <div class="alert alert-warning small">
+            <i class="bi bi-shield-check me-1"></i>
+            La validation enregistre la vente, décrémente le stock et génère le reçu de façon atomique.
+          </div>
+          <button class="btn btn-success w-100 btn-caisse" type="submit" {% if not elements %}disabled{% endif %}>
+            <i class="bi bi-check2-circle me-1"></i> Valider la vente — {{ total|ariary }}
+          </button>
+        </form>
+      </div>
+    </div>
+    <form method="post" action="{% url 'vider_panier' %}" class="mt-2">
+      {% csrf_token %}
+      <button class="btn btn-outline-secondary w-100 btn-sm" type="submit"><i class="bi bi-x-circle me-1"></i> Vider le panier</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

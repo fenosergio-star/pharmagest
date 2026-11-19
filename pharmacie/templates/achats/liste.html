@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Achats{% endblock %}
+{% block titre_page %}Commandes d'achat{% endblock %}
+{% block contenu %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="q">Recherche</label>
+        <input class="form-control" id="q" name="q" value="{{ recherche }}" placeholder="N° commande ou fournisseur">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="statut">Statut</label>
+        <select class="form-select" id="statut" name="statut">
+          <option value="">Tous</option>
+          {% for valeur, libelle in statuts %}
+            <option value="{{ valeur }}" {% if statut_selectionne == valeur %}selected{% endif %}>{{ libelle }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2"><button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Filtrer</button></div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>{{ page.paginator.count }} commande(s)</span>
+    <a class="btn btn-primary btn-sm" href="{% url 'creer_commande' %}"><i class="bi bi-plus-lg"></i> Nouvelle commande</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>N°</th><th>Fournisseur</th><th>Date</th><th>Statut</th><th class="text-end">Total</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for commande in commandes %}
+        <tr>
+          <td><a href="{% url 'detail_commande' commande.pk %}" class="fw-semibold">{{ commande.numero }}</a></td>
+          <td>{{ commande.fournisseur.nom }}</td>
+          <td>{{ commande.date_commande|date:"d/m/Y" }}</td>
+          <td>
+            {% if commande.statut == 'BROUILLON' %}<span class="badge bg-secondary">{{ commande.get_statut_display }}</span>
+            {% elif commande.statut == 'COMMANDEE' %}<span class="badge bg-primary">{{ commande.get_statut_display }}</span>
+            {% elif commande.statut == 'PARTIELLE' %}<span class="badge bg-warning text-dark">{{ commande.get_statut_display }}</span>
+            {% elif commande.statut == 'RECEPTIONNEE' %}<span class="badge bg-success">{{ commande.get_statut_display }}</span>
+            {% else %}<span class="badge bg-danger">{{ commande.get_statut_display }}</span>{% endif %}
+          </td>
+          <td class="text-end">{{ commande.total|ariary }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'detail_commande' commande.pk %}"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Aucune commande.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

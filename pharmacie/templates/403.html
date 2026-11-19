@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titre %}Accès refusé{% endblock %}
+{% block titre_page %}Accès refusé{% endblock %}
+{% block contenu %}
+  {% include "partials/erreur.html" with code="403" icone="bi-shield-lock" titre="Accès interdit" message="Vous n'avez pas les permissions nécessaires pour accéder à cette page." %}
+{% endblock %}
+{% block contenu_public %}
+  {% include "partials/erreur.html" with code="403" icone="bi-shield-lock" titre="Accès interdit" message="Vous devez vous connecter pour accéder à cette page." %}
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Retour {{ vente.numero }}{% endblock %}
+{% block titre_page %}Retour de vente {{ vente.numero }}{% endblock %}
+{% block contenu %}
+<div class="mb-3">
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'detail_vente' vente.pk %}"><i class="bi bi-arrow-left"></i> Retour à la vente</a>
+</div>
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">Lignes de la vente</div>
+      <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+          <thead><tr><th>Produit</th><th class="text-center">Vendue</th><th class="text-center">Retournable</th><th class="text-end">Prix</th></tr></thead>
+          <tbody>
+          {% for ligne in lignes %}
+            <tr>
+              <td>{{ ligne.medicament.nom }}</td>
+              <td class="text-center">{{ ligne.quantite }}</td>
+              <td class="text-center">{{ ligne.quantite_retournable }}</td>
+              <td class="text-end">{{ ligne.prix_unitaire|ariary }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">Enregistrer un retour</div>
+      <div class="card-body">
+        <div class="alert alert-info small">
+          Un retour n'efface pas la vente d'origine : il crée une opération compensatoire
+          traçable. Le produit n'est remis en stock que s'il est éligible.
+        </div>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "partials/form.html" %}
+          <button class="btn btn-warning" type="submit"><i class="bi bi-arrow-return-left"></i> Enregistrer le retour</button>
+          <a class="btn btn-outline-secondary" href="{% url 'detail_vente' vente.pk %}">Annuler</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

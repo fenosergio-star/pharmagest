@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titre %}Utilisateurs{% endblock %}
+{% block titre_page %}Utilisateurs et droits{% endblock %}
+{% block contenu %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>{{ utilisateurs|length }} utilisateur(s)</span>
+    <a class="btn btn-primary btn-sm" href="{% url 'creer_utilisateur' %}"><i class="bi bi-person-plus"></i> Nouvel utilisateur</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Identifiant</th><th>Nom</th><th>Rôle</th><th>E-mail</th><th>Téléphone</th><th>Statut</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for utilisateur in utilisateurs %}
+        <tr>
+          <td class="fw-semibold">{{ utilisateur.username }}{% if utilisateur.is_superuser %} <span class="badge bg-dark">superuser</span>{% endif %}</td>
+          <td>{{ utilisateur.get_full_name|default:"-" }}</td>
+          <td>{{ utilisateur.get_role_display }}</td>
+          <td>{{ utilisateur.email|default:"-" }}</td>
+          <td>{{ utilisateur.telephone|default:"-" }}</td>
+          <td><span class="badge {% if utilisateur.is_active %}bg-success{% else %}bg-secondary{% endif %}">{% if utilisateur.is_active %}Actif{% else %}Désactivé{% endif %}</span></td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-1">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'modifier_utilisateur' utilisateur.pk %}"><i class="bi bi-pencil"></i></a>
+              {% if utilisateur.pk != user.pk %}
+              <form method="post" action="{% url 'basculer_utilisateur' utilisateur.pk %}" onsubmit="return confirm('Changer le statut de ce compte ?');">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-{% if utilisateur.is_active %}danger{% else %}success{% endif %}" type="submit">
+                  <i class="bi bi-{% if utilisateur.is_active %}person-x{% else %}person-check{% endif %}"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Aucun utilisateur.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

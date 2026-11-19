@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Ventes{% endblock %}
+{% block titre_page %}Ventes{% endblock %}
+{% block contenu %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label" for="q">Recherche</label>
+        <input class="form-control" id="q" name="q" value="{{ recherche }}" placeholder="N° de vente ou client">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="statut">Statut</label>
+        <select class="form-select" id="statut" name="statut">
+          <option value="">Tous</option>
+          {% for valeur, libelle in statuts %}
+            <option value="{{ valeur }}" {% if statut_selectionne == valeur %}selected{% endif %}>{{ libelle }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-grid"><button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Filtrer</button></div>
+      <div class="col-md-2 d-grid"><a class="btn btn-success" href="{% url 'caisse' %}"><i class="bi bi-cash-register"></i> Caisse</a></div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">{{ page.paginator.count }} vente(s)</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Caissier</th><th>Paiement</th><th class="text-end">Total</th><th>Statut</th><th class="text-end">Document</th></tr></thead>
+      <tbody>
+      {% for vente in ventes %}
+        <tr>
+          <td><a href="{% url 'detail_vente' vente.pk %}" class="fw-semibold">{{ vente.numero }}</a></td>
+          <td>{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+          <td>{{ vente.client.nom|default:"Comptoir" }}</td>
+          <td>{{ vente.utilisateur|default:"-" }}</td>
+          <td>{{ vente.get_mode_paiement_display }}</td>
+          <td class="text-end">{{ vente.total|ariary }}</td>
+          <td><span class="badge {% if vente.statut == 'VALIDEE' %}bg-success{% else %}bg-secondary{% endif %}">{{ vente.get_statut_display }}</span></td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'pdf_recu' vente.pk %}"><i class="bi bi-file-pdf"></i></a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Aucune vente.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

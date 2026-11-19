@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Caisse{% endblock %}
+{% block titre_page %}Caisse — point de vente{% endblock %}
+{% block sous_titre %}Recherchez un médicament ou scannez son code-barres{% endblock %}
+{% block contenu %}
+<div class="page-head mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <span class="page-head-icon"><i class="bi bi-cash-register"></i></span>
+    <div>
+      <h2>Point de vente</h2>
+      <p>Les lots sont proposés automatiquement en FEFO (premier périmé, premier sorti).</p>
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge bg-light border"><i class="bi bi-clock-history me-1"></i>{{ ventes_jour|default:"0" }} vente(s) aujourd'hui</span>
+    <a class="btn btn-primary" href="{% url 'panier' %}"><i class="bi bi-cart-check me-1"></i> Panier ({{ nombre_panier }})</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-md-9">
+            <label class="form-label" for="q">Rechercher un médicament</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+              <input class="form-control form-control-lg" id="q" name="q" value="{{ recherche }}" placeholder="Nom, générique ou code-barres (scanner)" autofocus>
+            </div>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search me-1"></i> Rechercher</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% for medicament in medicaments %}
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2">
+            {% if medicament.photo %}
+              <img src="{{ medicament.photo.url }}" class="med-photo" alt="{{ medicament.nom }}">
+            {% else %}
+              <span class="med-photo-placeholder"><i class="bi bi-capsule"></i></span>
+            {% endif %}
+            <div>
+              <div class="fw-bold">{{ medicament.nom }}</div>
+              <div class="small text-muted">{{ medicament.dosage }} {{ medicament.get_forme_display }} · {{ medicament.categorie.nom }}</div>
+            </div>
+          </div>
+          <span class="badge {{ medicament|badge_stock }}">{{ medicament.stock_disponible }} en stock</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead><tr><th>Lot</th><th>Péremption</th><th class="text-center">Disponible</th><th class="text-end">Prix de vente</th><th style="width:190px">Ajouter au panier</th></tr></thead>
+            <tbody>
+            {% for lot in medicament.lots_vente %}
+              <tr>
+                <td class="fw-semibold">{{ lot.numero_lot }}</td>
+                <td>{{ lot.date_peremption|date:"d/m/Y" }}</td>
+                <td class="text-center">{{ lot.quantite }}</td>
+                <td class="text-end fw-semibold">{{ medicament.prix_vente|ariary }}</td>
+                <td>
+                  <form method="post" action="{% url 'ajouter_au_panier' %}" class="d-flex gap-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="lot_id" value="{{ lot.pk }}">
+                    <input type="number" name="quantite" class="form-control form-control-sm" value="1" min="1" max="{{ lot.quantite }}" style="width:72px" aria-label="Quantité">
+                    <button class="btn btn-sm btn-success flex-grow-1" type="submit"><i class="bi bi-plus-lg me-1"></i> Ajouter</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="skeleton-empty">Aucun lot délivrable (périmé, bloqué ou épuisé).</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% empty %}
+      <div class="card mb-4">
+        <div class="card-body text-center py-5">
+          {% if recherche %}
+            <div class="stat-icon mx-auto mb-3"><i class="bi bi-search"></i></div>
+            <h3 class="h5 mb-1">Aucun résultat</h3>
+            <p class="text-muted mb-0">Aucun médicament ne correspond à « {{ recherche }} ».</p>
+          {% else %}
+            <div class="stat-icon mx-auto mb-3"><i class="bi bi-upc-scan"></i></div>
+            <h3 class="h5 mb-1">Prêt pour une nouvelle vente</h3>
+            <p class="text-muted mb-0">Saisissez un nom ou scannez un code-barres pour commencer.</p>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card sticky-top" style="top:1rem">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-cart3 me-1"></i> Panier en cours</span>
+        <span class="badge bg-primary">{{ nombre_panier }} article(s)</span>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <span class="stat-icon"><i class="bi bi-receipt-cutoff"></i></span>
+          <div>
+            <div class="stat-label">Ventes du jour</div>
+            <div class="fw-bold fs-5">{{ ventes_jour|default:"0" }}</div>
+          </div>
+        </div>
+        <p class="text-muted small">Contrôlez le panier et le mode de paiement avant de valider la vente.</p>
+        <a class="btn btn-success w-100 btn-caisse" href="{% url 'panier' %}"><i class="bi bi-cart-check me-1"></i> Voir le panier</a>
+        <form method="post" action="{% url 'vider_panier' %}" class="mt-2">
+          {% csrf_token %}
+          <button class="btn btn-outline-secondary w-100 btn-sm" type="submit"><i class="bi bi-x-circle me-1"></i> Vider le panier</button>
+        </form>
+      </div>
+      <div class="card-footer">
+        <div class="d-flex align-items-start gap-2 small text-muted">
+          <i class="bi bi-info-circle mt-1"></i>
+          <span>La validation enregistre la vente, décrémente le stock et génère le reçu de façon atomique.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

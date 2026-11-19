@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Réception {{ commande.numero }}{% endblock %}
+{% block titre_page %}Réception de la commande {{ commande.numero }}{% endblock %}
+{% block contenu %}
+<div class="mb-3">
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'detail_commande' commande.pk %}"><i class="bi bi-arrow-left"></i> Retour</a>
+</div>
+<div class="alert alert-info">
+  Saisissez les quantités réellement reçues. Le stock et les lots ne seront créés qu'après validation
+  de cette réception. Une commande peut être réceptionnée partiellement.
+</div>
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card mb-3">
+    <div class="card-header">Marchandises reçues</div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr><th>Médicament</th><th class="text-center">Reste à recevoir</th><th style="width:120px">Quantité reçue</th><th style="width:180px">N° de lot</th><th style="width:180px">Péremption</th></tr>
+        </thead>
+        <tbody>
+        {% for ligne in lignes %}
+          <tr>
+            <td>
+              {{ ligne.medicament }}
+              <div class="small text-muted">Commandé : {{ ligne.quantite }}, déjà reçu : {{ ligne.quantite_recue }}</div>
+            </td>
+            <td class="text-center"><span class="badge bg-secondary">{{ ligne.reste }}</span></td>
+            <td>
+              <input type="number" class="form-control" name="qte_{{ ligne.pk }}" min="0" max="{{ ligne.reste }}" value="0">
+            </td>
+            <td>
+              <input type="text" class="form-control" name="lot_{{ ligne.pk }}" placeholder="Ex. LOT-2026-01">
+            </td>
+            <td>
+              <input type="date" class="form-control" name="peremption_{{ ligne.pk }}">
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">Toutes les lignes ont été réceptionnées.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card mb-3">
+    <div class="card-body">
+      <label class="form-label" for="{{ form.notes.id_for_label }}">Notes de réception</label>
+      {{ form.notes|form_control }}
+    </div>
+  </div>
+  <button class="btn btn-success" type="submit"><i class="bi bi-box-arrow-in-down"></i> Valider la réception</button>
+  <a class="btn btn-outline-secondary" href="{% url 'detail_commande' commande.pk %}">Annuler</a>
+</form>
+{% endblock %}

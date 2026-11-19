@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titre %}Fournisseurs{% endblock %}
+{% block titre_page %}Fournisseurs{% endblock %}
+{% block contenu %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label" for="q">Recherche</label>
+        <input class="form-control" id="q" name="q" value="{{ recherche }}" placeholder="Nom ou téléphone">
+      </div>
+      <div class="col-md-2"><button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Rechercher</button></div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>{{ fournisseurs|length }} fournisseur(s)</span>
+    <a class="btn btn-primary btn-sm" href="{% url 'creer_fournisseur' %}"><i class="bi bi-plus-lg"></i> Ajouter</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Nom</th><th>Contact</th><th>Téléphone</th><th>E-mail</th><th>Statut</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for fournisseur in fournisseurs %}
+        <tr>
+          <td><a href="{% url 'detail_fournisseur' fournisseur.pk %}" class="fw-semibold">{{ fournisseur.nom }}</a></td>
+          <td>{{ fournisseur.contact_principal|default:"-" }}</td>
+          <td>{{ fournisseur.telephone|default:"-" }}</td>
+          <td>{{ fournisseur.email|default:"-" }}</td>
+          <td><span class="badge {% if fournisseur.actif %}bg-success{% else %}bg-secondary{% endif %}">{% if fournisseur.actif %}Actif{% else %}Inactif{% endif %}</span></td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a class="btn btn-outline-secondary" href="{% url 'detail_fournisseur' fournisseur.pk %}"><i class="bi bi-eye"></i></a>
+              <a class="btn btn-outline-primary" href="{% url 'modifier_fournisseur' fournisseur.pk %}"><i class="bi bi-pencil"></i></a>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Aucun fournisseur trouvé.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

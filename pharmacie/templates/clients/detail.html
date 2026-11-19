@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}{{ client.nom }}{% endblock %}
+{% block titre_page %}Fiche client{% endblock %}
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'liste_clients' %}"><i class="bi bi-arrow-left"></i> Retour</a>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary btn-sm" href="{% url 'modifier_client' client.pk %}"><i class="bi bi-pencil"></i> Modifier</a>
+    <form method="post" action="{% url 'basculer_client' client.pk %}">
+      {% csrf_token %}
+      <button class="btn btn-outline-{% if client.actif %}danger{% else %}success{% endif %} btn-sm" type="submit">
+        {% if client.actif %}Désactiver{% else %}Activer{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">Coordonnées</div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between"><span>Nom</span><strong>{{ client.nom }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>Téléphone</span><strong>{{ client.telephone|default:"-" }}</strong></li>
+        <li class="list-group-item d-flex justify-content-between"><span>E-mail</span><strong>{{ client.email|default:"-" }}</strong></li>
+        <li class="list-group-item"><span class="d-block text-muted">Adresse</span>{{ client.adresse|default:"-"|linebreaksbr }}</li>
+        <li class="list-group-item d-flex justify-content-between"><span>Statut</span><span class="badge {% if client.actif %}bg-success{% else %}bg-secondary{% endif %}">{% if client.actif %}Actif{% else %}Inactif{% endif %}</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">Historique des ventes</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead><tr><th>N°</th><th>Date</th><th>Paiement</th><th class="text-end">Total</th><th></th></tr></thead>
+          <tbody>
+          {% for vente in ventes %}
+            <tr>
+              <td><a href="{% url 'detail_vente' vente.pk %}">{{ vente.numero }}</a></td>
+              <td>{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+              <td>{{ vente.get_mode_paiement_display }}</td>
+              <td class="text-end">{{ vente.total|ariary }}</td>
+              <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'pdf_recu' vente.pk %}"><i class="bi bi-file-pdf"></i></a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Aucune vente pour ce client.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

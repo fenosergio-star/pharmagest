@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titre %}Page introuvable{% endblock %}
+{% block titre_page %}Page introuvable{% endblock %}
+{% block contenu %}
+  {% include "partials/erreur.html" with code="404" icone="bi-search" titre="Page introuvable" message="La page ou l'élément demandé n'existe pas ou a été déplacé." %}
+{% endblock %}
+{% block contenu_public %}
+  {% include "partials/erreur.html" with code="404" icone="bi-search" titre="Page introuvable" message="La page ou l'élément demandé n'existe pas ou a été déplacé." %}
+{% endblock %}

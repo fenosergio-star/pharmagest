@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Vente {{ vente.numero }}{% endblock %}
+{% block titre_page %}Vente {{ vente.numero }}{% endblock %}
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'liste_ventes' %}"><i class="bi bi-arrow-left"></i> Retour</a>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-danger btn-sm" href="{% url 'pdf_recu' vente.pk %}"><i class="bi bi-file-pdf"></i> Reçu</a>
+    <a class="btn btn-outline-danger btn-sm" href="{% url 'pdf_facture' vente.pk %}"><i class="bi bi-file-earmark-text"></i> Facture</a>
+    {% if vente.est_retournable %}
+      <a class="btn btn-warning btn-sm" href="{% url 'retour_vente' vente.pk %}"><i class="bi bi-arrow-return-left"></i> Enregistrer un retour</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header">Informations</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-sm-4 mb-2"><span class="text-muted small d-block">Date</span>{{ vente.date_vente|date:"d/m/Y H:i" }}</div>
+          <div class="col-sm-4 mb-2"><span class="text-muted small d-block">Client</span>{% if vente.client %}<a href="{% url 'detail_client' vente.client.pk %}">{{ vente.client.nom }}</a>{% else %}Client comptoir{% endif %}</div>
+          <div class="col-sm-4 mb-2"><span class="text-muted small d-block">Caissier</span>{{ vente.utilisateur|default:"-" }}</div>
+          <div class="col-sm-4 mb-2"><span class="text-muted small d-block">Paiement</span>{{ vente.get_mode_paiement_display }}</div>
+          <div class="col-sm-4 mb-2"><span class="text-muted small d-block">Statut</span>{{ vente.get_statut_display }}</div>
+          <div class="col-sm-4 mb-2"><span class="text-muted small d-block">Remboursements</span>{{ vente.montant_rembourse|ariary }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column justify-content-center">
+        <div class="stat-label">Total de la vente</div>
+        <div class="stat-value">{{ vente.total|ariary }}</div>
+        <div class="small text-muted">Net après retours : {{ vente.net|ariary }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Lignes de vente</div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr><th>Médicament</th><th>Lot</th><th class="text-center">Quantité</th><th class="text-center">Retournée</th><th class="text-end">Prix appliqué</th><th class="text-end">Sous-total</th></tr></thead>
+      <tbody>
+      {% for ligne in lignes %}
+        <tr>
+          <td>{{ ligne.medicament }}</td>
+          <td>{{ ligne.lot.numero_lot|default:"-" }}</td>
+          <td class="text-center">{{ ligne.quantite }}</td>
+          <td class="text-center">{{ ligne.quantite_retournee }}</td>
+          <td class="text-end">{{ ligne.prix_unitaire|ariary }}</td>
+          <td class="text-end">{{ ligne.sous_total|ariary }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><th colspan="5" class="text-end">Total</th><th class="text-end">{{ vente.total|ariary }}</th></tr></tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Paiements</div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Date</th><th>Mode</th><th>Statut</th><th>Référence</th><th class="text-end">Montant</th><th></th></tr></thead>
+          <tbody>
+          {% for paiement in paiements %}
+            <tr>
+              <td>{{ paiement.date|date:"d/m/Y H:i" }}</td>
+              <td>{{ paiement.get_mode_display }}</td>
+              <td>{{ paiement.get_statut_display }}</td>
+              <td>{{ paiement.reference|default:"-" }}</td>
+              <td class="text-end">{{ paiement.montant|ariary }}</td>
+              <td class="text-end">
+                {% if paiement.statut == 'EN_ATTENTE' %}
+                  <form method="post" action="{% url 'confirmer_paiement' paiement.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-success" type="submit" title="Confirmer le paiement"><i class="bi bi-check2-circle"></i></button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">Aucun paiement.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Retours</div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Date</th><th>Produit</th><th class="text-center">Qté</th><th>Motif</th><th class="text-end">Remboursé</th></tr></thead>
+          <tbody>
+          {% for retour in retours %}
+            <tr>
+              <td>{{ retour.date|date:"d/m/Y H:i" }}</td>
+              <td>{{ retour.ligne_vente.medicament.nom }}</td>
+              <td class="text-center">{{ retour.quantite }}</td>
+              <td>{{ retour.motif }}</td>
+              <td class="text-end">{{ retour.montant_rembourse|ariary }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Aucun retour.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

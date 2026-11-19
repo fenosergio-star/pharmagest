@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Tableau de bord{% endblock %}
+{% block titre_page %}Tableau de bord{% endblock %}
+{% block sous_titre %}Vue d'ensemble de l'activité — {{ PHARMACIE_NOM }}{% endblock %}
+{% block contenu %}
+<div class="page-head mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <span class="page-head-icon"><i class="bi bi-speedometer2"></i></span>
+    <div>
+      <h2>Bonjour, {{ user.first_name|default:user.username }}</h2>
+      <p>Voici l'état de votre pharmacie et les points à surveiller aujourd'hui.</p>
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if user.est_administrateur or user.role == 'PHARMACIEN' or user.role == 'CAISSIER' %}
+      <a class="btn btn-primary" href="{% url 'caisse' %}"><i class="bi bi-cash-register me-1"></i> Nouvelle vente</a>
+    {% endif %}
+    {% if user.est_administrateur or user.role == 'PHARMACIEN' or user.role == 'GESTIONNAIRE' %}
+      <a class="btn btn-outline-secondary" href="{% url 'creer_medicament' %}"><i class="bi bi-plus-lg me-1"></i> Médicament</a>
+      <a class="btn btn-outline-secondary" href="{% url 'creer_commande' %}"><i class="bi bi-cart-plus me-1"></i> Commande</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card stat-card success h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Médicaments actifs</div>
+            <div class="stat-value">{{ medicaments_actifs }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-capsule"></i></span>
+        </div>
+        <a class="stat-link mt-2" href="{% url 'liste_medicaments' %}">Voir le catalogue <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card stat-card info h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Ventes du jour</div>
+            <div class="stat-value">{{ ventes_jour }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-receipt"></i></span>
+        </div>
+        <div class="small text-muted mt-2">{{ montant_jour|ariary }} encaissés</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card stat-card warning h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Stocks faibles</div>
+            <div class="stat-value">{{ nombre_stocks_faibles }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-exclamation-triangle"></i></span>
+        </div>
+        <a class="stat-link mt-2" href="{% url 'liste_stock' %}?etat=faible">Traiter les alertes <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card stat-card danger h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Péremptions proches</div>
+            <div class="stat-value">{{ nombre_peremptions }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-hourglass-split"></i></span>
+        </div>
+        <a class="stat-link mt-2" href="{% url 'liste_peremptions' %}">Consulter les lots <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4 col-xl">
+    <div class="card stat-card h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">CA (30 jours)</div>
+            <div class="stat-value fs-5">{{ statistiques.chiffre_affaires|ariary }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-graph-up-arrow"></i></span>
+        </div>
+        <a class="stat-link mt-2" href="{% url 'statistiques' %}">Voir les statistiques <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <div>Ventes récentes</div>
+          <div class="small text-muted fw-normal">Les dernières transactions enregistrées</div>
+        </div>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'liste_ventes' %}">Tout voir</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>N°</th><th>Client</th><th>Paiement</th><th class="text-end">Total</th><th class="text-end">Reçu</th></tr></thead>
+          <tbody>
+          {% for vente in ventes_recentes %}
+            <tr>
+              <td><a href="{% url 'detail_vente' vente.pk %}">{{ vente.numero }}</a></td>
+              <td>
+                {{ vente.client.nom|default:"Client comptoir" }}
+                <div class="small text-muted">{{ vente.date_vente|date:"d/m/Y H:i" }}</div>
+              </td>
+              <td><span class="badge bg-light border">{{ vente.get_mode_paiement_display }}</span></td>
+              <td class="text-end fw-semibold">{{ vente.total|ariary }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-danger" href="{% url 'pdf_recu' vente.pk %}" title="Reçu PDF"><i class="bi bi-file-pdf"></i></a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="skeleton-empty">Aucune vente enregistrée pour le moment.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <div>Produits les plus vendus</div>
+          <div class="small text-muted fw-normal">Sur les 30 derniers jours</div>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'pdf_rapport_ventes' %}"><i class="bi bi-file-pdf me-1"></i> Rapport</a>
+      </div>
+      <div class="card-body">
+        {% for produit in statistiques.top_produits %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-semibold">{{ produit.medicament__nom }}</span>
+              <span class="small text-muted">{{ produit.quantite }} vendu(s) · {{ produit.montant|ariary }}</span>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" role="progressbar" style="width: {% widthratio produit.quantite statistiques.top_produits.0.quantite 100 %}%" aria-valuenow="{{ produit.quantite }}" aria-valuemin="0" aria-valuemax="{{ statistiques.top_produits.0.quantite }}"></div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="skeleton-empty">Aucune vente sur la période.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <div>Alertes de stock</div>
+          <div class="small text-muted fw-normal">Produits à réapprovisionner</div>
+        </div>
+        <span class="badge bg-warning text-dark">{{ nombre_stocks_faibles }}</span>
+      </div>
+      <div class="alert-list">
+        {% for medicament in stocks_faibles %}
+          <div class="alert-item">
+            <div class="d-flex align-items-center gap-2 min-w-0">
+              <span class="alert-dot {% if medicament.en_rupture %}danger{% else %}warning{% endif %}"></span>
+              <div class="min-w-0">
+                <a class="fw-semibold d-block text-truncate" href="{% url 'detail_medicament' medicament.pk %}">{{ medicament.nom }}</a>
+                <span class="small text-muted">Seuil d'alerte : {{ medicament.seuil_alerte }}</span>
+              </div>
+            </div>
+            <span class="badge {% if medicament.en_rupture %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+              {{ medicament.stock_disponible }}
+            </span>
+          </div>
+        {% empty %}
+          <div class="skeleton-empty">Aucune alerte de stock.</div>
+        {% endfor %}
+      </div>
+      {% if nombre_stocks_faibles %}
+      <div class="card-footer text-end">
+        <a class="stat-link" href="{% url 'liste_stock' %}?etat=faible">Voir toutes les alertes <i class="bi bi-arrow-right"></i></a>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <div>Péremptions proches</div>
+          <div class="small text-muted fw-normal">Lots à contrôler en priorité</div>
+        </div>
+        <a class="small fw-semibold" href="{% url 'liste_peremptions' %}">Détail</a>
+      </div>
+      <div class="alert-list">
+        {% for lot in peremptions %}
+          <div class="alert-item">
+            <div class="d-flex align-items-center gap-2 min-w-0">
+              <span class="alert-dot {% if lot.est_perime %}danger{% else %}warning{% endif %}"></span>
+              <div class="min-w-0">
+                <span class="fw-semibold d-block text-truncate">{{ lot.medicament.nom }}</span>
+                <span class="small text-muted">Lot {{ lot.numero_lot }}</span>
+              </div>
+            </div>
+            <span class="badge {% if lot.est_perime %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+              {{ lot.date_peremption|date:"d/m/Y" }}
+            </span>
+          </div>
+        {% empty %}
+          <div class="skeleton-empty">Aucun lot proche de la péremption.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

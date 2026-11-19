@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Médicaments{% endblock %}
+{% block titre_page %}Médicaments{% endblock %}
+{% block contenu %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="q">Recherche</label>
+        <input class="form-control" id="q" name="q" value="{{ recherche }}" placeholder="Nom, générique ou code-barres">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="categorie">Catégorie</label>
+        <select class="form-select" id="categorie" name="categorie">
+          <option value="">Toutes</option>
+          {% for categorie in categories %}
+            <option value="{{ categorie.pk }}" {% if categorie_selectionnee == categorie.pk|stringformat:"s" %}selected{% endif %}>{{ categorie.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="tri">Tri</label>
+        <select class="form-select" id="tri" name="tri">
+          <option value="nom" {% if tri == 'nom' %}selected{% endif %}>Nom A-Z</option>
+          <option value="-nom" {% if tri == '-nom' %}selected{% endif %}>Nom Z-A</option>
+          <option value="prix_vente" {% if tri == 'prix_vente' %}selected{% endif %}>Prix croissant</option>
+          <option value="-prix_vente" {% if tri == '-prix_vente' %}selected{% endif %}>Prix décroissant</option>
+          <option value="stock" {% if tri == 'stock' %}selected{% endif %}>Stock croissant</option>
+          <option value="-stock" {% if tri == '-stock' %}selected{% endif %}>Stock décroissant</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="statut">Statut</label>
+        <select class="form-select" id="statut" name="statut">
+          <option value="ACTIF" {% if statut_selectionne == 'ACTIF' %}selected{% endif %}>Actifs</option>
+          <option value="ARCHIVE" {% if statut_selectionne == 'ARCHIVE' %}selected{% endif %}>Archivés</option>
+          <option value="" {% if statut_selectionne == '' %}selected{% endif %}>Tous</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>{{ page.paginator.count }} médicament(s)</span>
+    {% if user.est_administrateur or user.role == 'PHARMACIEN' or user.role == 'GESTIONNAIRE' %}
+      <a class="btn btn-primary btn-sm" href="{% url 'creer_medicament' %}"><i class="bi bi-plus-lg"></i> Ajouter</a>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Photo</th><th>Médicament</th><th>Catégorie</th><th>Prix de vente</th><th class="text-center">Stock</th><th>Statut</th><th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for medicament in medicaments %}
+        <tr>
+          <td>
+            {% if medicament.photo %}
+              <img src="{{ medicament.photo.url }}" class="med-photo" alt="{{ medicament.nom }}">
+            {% else %}
+              <span class="med-photo-placeholder"><i class="bi bi-capsule"></i></span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'detail_medicament' medicament.pk %}" class="fw-semibold">{{ medicament.nom }}</a>
+            <div class="small text-muted">{{ medicament.dosage }} {{ medicament.get_forme_display }}</div>
+            {% if medicament.code_barres %}<div class="small text-muted">Code : {{ medicament.code_barres }}</div>{% endif %}
+          </td>
+          <td>{{ medicament.categorie.nom }}</td>
+          <td>{{ medicament.prix_vente|ariary }}</td>
+          <td class="text-center">
+            <span class="badge {{ medicament|badge_stock }}">{{ medicament.stock_disponible }}</span>
+            {% if medicament.est_stock_faible %}<div class="small text-danger">Seuil {{ medicament.seuil_alerte }}</div>{% endif %}
+          </td>
+          <td>
+            <span class="badge {% if medicament.statut == 'ACTIF' %}bg-success{% else %}bg-secondary{% endif %}">{{ medicament.get_statut_display }}</span>
+          </td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a class="btn btn-outline-secondary" href="{% url 'detail_medicament' medicament.pk %}" title="Détails"><i class="bi bi-eye"></i></a>
+              {% if user.est_administrateur or user.role == 'PHARMACIEN' or user.role == 'GESTIONNAIRE' %}
+                <a class="btn btn-outline-primary" href="{% url 'modifier_medicament' medicament.pk %}" title="Modifier"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="{% url 'supprimer_medicament' medicament.pk %}" class="d-inline" onsubmit="return confirm('Supprimer ce médicament ? S\'il a un historique, il sera archivé.');">
+                  {% csrf_token %}
+                  <button class="btn btn-outline-danger" type="submit" title="Supprimer / archiver"><i class="bi bi-trash"></i></button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Aucun médicament trouvé.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

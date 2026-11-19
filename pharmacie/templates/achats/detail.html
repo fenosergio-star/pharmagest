@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Commande {{ commande.numero }}{% endblock %}
+{% block titre_page %}Commande d'achat {{ commande.numero }}{% endblock %}
+{% block contenu %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'liste_commandes' %}"><i class="bi bi-arrow-left"></i> Retour</a>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-danger btn-sm" href="{% url 'pdf_bon_commande' commande.pk %}"><i class="bi bi-file-pdf"></i> Bon de commande</a>
+    {% if commande.statut == 'BROUILLON' %}
+      <a class="btn btn-primary btn-sm" href="{% url 'modifier_commande' commande.pk %}"><i class="bi bi-pencil"></i> Modifier</a>
+      <form method="post" action="{% url 'valider_commande' commande.pk %}" onsubmit="return confirm('Valider cette commande ? Le stock ne sera pas encore modifié.');">
+        {% csrf_token %}
+        <button class="btn btn-success btn-sm" type="submit"><i class="bi bi-check2-circle"></i> Valider</button>
+      </form>
+    {% endif %}
+    {% if commande.peut_etre_receptionnee %}
+      <a class="btn btn-success btn-sm" href="{% url 'receptionner_commande' commande.pk %}"><i class="bi bi-box-arrow-in-down"></i> Réceptionner</a>
+    {% endif %}
+    {% if commande.statut != 'ANNULEE' and commande.statut != 'RECEPTIONNEE' %}
+      <form method="post" action="{% url 'annuler_commande' commande.pk %}" onsubmit="return confirm('Annuler cette commande ?');">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger btn-sm" type="submit"><i class="bi bi-x-circle"></i> Annuler</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header">Informations</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-sm-6 mb-2"><span class="text-muted small d-block">Fournisseur</span><a href="{% url 'detail_fournisseur' commande.fournisseur.pk %}">{{ commande.fournisseur.nom }}</a></div>
+          <div class="col-sm-3 mb-2"><span class="text-muted small d-block">Date</span>{{ commande.date_commande|date:"d/m/Y H:i" }}</div>
+          <div class="col-sm-3 mb-2"><span class="text-muted small d-block">Statut</span>{{ commande.get_statut_display }}</div>
+          <div class="col-sm-6 mb-2"><span class="text-muted small d-block">Créée par</span>{{ commande.utilisateur|default:"-" }}</div>
+          <div class="col-sm-6 mb-2"><span class="text-muted small d-block">Quantités</span>{{ commande.quantite_recue }} / {{ commande.quantite_commandee }} reçue(s)</div>
+          {% if commande.notes %}<div class="col-12"><span class="text-muted small d-block">Notes</span>{{ commande.notes|linebreaksbr }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column justify-content-center">
+        <div class="stat-label">Montant total</div>
+        <div class="stat-value">{{ commande.total|ariary }}</div>
+        <div class="small text-muted mt-1">Reste à recevoir : {{ commande.reste_a_recevoir }} unité(s)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Lignes de commande</div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr><th>Médicament</th><th class="text-center">Quantité</th><th class="text-center">Reçue</th><th class="text-center">Reste</th><th class="text-end">Prix d'achat</th><th class="text-end">Sous-total</th></tr></thead>
+      <tbody>
+      {% for ligne in lignes %}
+        <tr>
+          <td>{{ ligne.medicament }}</td>
+          <td class="text-center">{{ ligne.quantite }}</td>
+          <td class="text-center">{{ ligne.quantite_recue }}</td>
+          <td class="text-center">{{ ligne.reste }}</td>
+          <td class="text-end">{{ ligne.prix_achat|ariary }}</td>
+          <td class="text-end">{{ ligne.sous_total|ariary }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">Aucune ligne.</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><th colspan="5" class="text-end">Total</th><th class="text-end">{{ commande.total|ariary }}</th></tr></tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Réceptions</div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr><th>N°</th><th>Date</th><th>Par</th><th class="text-end">Montant</th><th class="text-end">Document</th></tr></thead>
+      <tbody>
+      {% for reception in receptions %}
+        <tr>
+          <td>{{ reception.numero }}</td>
+          <td>{{ reception.date_reception|date:"d/m/Y H:i" }}</td>
+          <td>{{ reception.utilisateur|default:"-" }}</td>
+          <td class="text-end">{{ reception.montant|ariary }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-danger" href="{% url 'pdf_bon_reception' reception.pk %}"><i class="bi bi-file-pdf"></i></a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-3">Aucune réception enregistrée.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Stock{% endblock %}
+{% block titre_page %}Stock disponible{% endblock %}
+{% block contenu %}
+<div class="row g-3 mb-3">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label" for="q">Recherche</label>
+            <input class="form-control" id="q" name="q" value="{{ recherche }}" placeholder="Nom ou code-barres">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="etat">Filtre</label>
+            <select class="form-select" id="etat" name="etat">
+              <option value="">Tout le stock</option>
+              <option value="faible" {% if filtre == 'faible' %}selected{% endif %}>Stocks faibles</option>
+              <option value="rupture" {% if filtre == 'rupture' %}selected{% endif %}>Ruptures</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Filtrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column justify-content-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" href="{% url 'pdf_rapport_stock' %}"><i class="bi bi-file-pdf"></i> Rapport de stock PDF</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'liste_mouvements' %}"><i class="bi bi-clock-history"></i> Historique des mouvements</a>
+        <a class="btn btn-outline-warning btn-sm" href="{% url 'liste_peremptions' %}"><i class="bi bi-exclamation-triangle"></i> Péremptions</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>{{ page.paginator.count }} médicament(s)</span>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'liste_lots' %}">Voir les lots</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Médicament</th><th>Catégorie</th><th class="text-center">Stock disponible</th><th class="text-center">Stock total</th><th class="text-center">Seuil</th><th>État</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for ligne in lignes %}
+        <tr>
+          <td><a href="{% url 'detail_medicament' ligne.medicament.pk %}" class="fw-semibold">{{ ligne.medicament.nom }}</a><div class="small text-muted">{{ ligne.medicament.dosage }} {{ ligne.medicament.get_forme_display }}</div></td>
+          <td>{{ ligne.medicament.categorie.nom }}</td>
+          <td class="text-center"><span class="badge {% if ligne.rupture %}bg-danger{% elif ligne.faible %}bg-warning text-dark{% else %}bg-success{% endif %}">{{ ligne.disponible }}</span></td>
+          <td class="text-center">{{ ligne.total }}</td>
+          <td class="text-center">{{ ligne.medicament.seuil_alerte }}</td>
+          <td>
+            {% if ligne.rupture %}<span class="badge bg-danger">Rupture</span>
+            {% elif ligne.faible %}<span class="badge bg-warning text-dark">Stock faible</span>
+            {% else %}<span class="badge bg-success">OK</span>{% endif %}
+            {% if ligne.peremption_proche %}<span class="badge bg-danger">Péremption proche</span>{% endif %}
+          </td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a class="btn btn-outline-secondary" href="{% url 'liste_lots' %}?q={{ ligne.medicament.nom }}"><i class="bi bi-boxes"></i></a>
+              <a class="btn btn-outline-secondary" href="{% url 'detail_medicament' ligne.medicament.pk %}"><i class="bi bi-eye"></i></a>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Aucun médicament ne correspond aux critères.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load pharmagest %}
+{% block titre %}Statistiques{% endblock %}
+{% block titre_page %}Rapports et statistiques{% endblock %}
+{% block sous_titre %}Analyse de l'activité sur la période sélectionnée{% endblock %}
+{% block contenu %}
+<div class="page-head mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <span class="page-head-icon"><i class="bi bi-graph-up-arrow"></i></span>
+    <div>
+      <h2>Rapports &amp; statistiques</h2>
+      <p>Chiffre d'affaires, encaissements, marge estimée et produits les plus vendus.</p>
+    </div>
+  </div>
+  <a class="btn btn-outline-danger" href="{% url 'pdf_rapport_ventes' %}?date_debut={{ debut|date:'Y-m-d' }}&date_fin={{ fin|date:'Y-m-d' }}">
+    <i class="bi bi-file-pdf me-1"></i> Rapport ventes PDF
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="date_debut">Du</label>
+        <input class="form-control" type="date" id="date_debut" name="date_debut" value="{{ debut|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="date_fin">Au</label>
+        <input class="form-control" type="date" id="date_fin" name="date_fin" value="{{ fin|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-arrow-repeat me-1"></i> Actualiser la période</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card success h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Chiffre d'affaires</div>
+            <div class="stat-value fs-5">{{ chiffre_affaires|ariary }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-cash-stack"></i></span>
+        </div>
+        <div class="small text-muted mt-2">{{ nombre_ventes }} vente(s) sur la période</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card info h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Encaissements confirmés</div>
+            <div class="stat-value fs-5">{{ encaissements|ariary }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-credit-card"></i></span>
+        </div>
+        <div class="small text-muted mt-2">Remboursements : {{ remboursements|ariary }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card warning h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Marge commerciale</div>
+            <div class="stat-value fs-5">{{ marge_commerciale|ariary }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-percent"></i></span>
+        </div>
+        <div class="small text-muted mt-2">Hors autres charges (pas un bénéfice net)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card h-100">
+      <div class="card-body">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Achats</div>
+            <div class="stat-value fs-5">{{ achats|ariary }}</div>
+          </div>
+          <span class="stat-icon"><i class="bi bi-cart-check"></i></span>
+        </div>
+        <div class="small text-muted mt-2">{{ nombre_commandes }} commande(s)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header">Produits les plus vendus</div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead><tr><th>Médicament</th><th class="text-end">Qté</th><th class="text-end">Montant</th></tr></thead>
+          <tbody>
+          {% for produit in top_produits %}
+            <tr>
+              <td class="fw-semibold">{{ produit.medicament__nom }}</td>
+              <td class="text-end">{{ produit.quantite }}</td>
+              <td class="text-end">{{ produit.montant|ariary }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="skeleton-empty">Aucune donnée sur la période.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">Documents PDF disponibles</div>
+      <div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{% url 'pdf_rapport_ventes' %}?date_debut={{ debut|date:'Y-m-d' }}&date_fin={{ fin|date:'Y-m-d' }}">
+          <span class="stat-icon" style="width:38px;height:38px;font-size:1rem"><i class="bi bi-file-earmark-text"></i></span>
+          <span>Rapport des ventes</span>
+        </a>
+        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{% url 'pdf_rapport_achats' %}?date_debut={{ debut|date:'Y-m-d' }}&date_fin={{ fin|date:'Y-m-d' }}">
+          <span class="stat-icon" style="width:38px;height:38px;font-size:1rem"><i class="bi bi-file-earmark-text"></i></span>
+          <span>Rapport des achats</span>
+        </a>
+        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{% url 'pdf_rapport_stock' %}">
+          <span class="stat-icon" style="width:38px;height:38px;font-size:1rem"><i class="bi bi-box-seam"></i></span>
+          <span>Rapport de stock</span>
+        </a>
+        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="{% url 'pdf_peremptions' %}">
+          <span class="stat-icon" style="width:38px;height:38px;font-size:1rem"><i class="bi bi-hourglass-split"></i></span>
+          <span>Produits proches de la péremption</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">Détail des ventes de la période</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Paiement</th><th class="text-end">Total</th><th class="text-end">Net</th></tr></thead>
+      <tbody>
+      {% for vente in ventes %}
+        <tr>
+          <td><a href="{% url 'detail_vente' vente.pk %}">{{ vente.numero }}</a></td>
+          <td>{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+          <td>{{ vente.client.nom|default:"Comptoir" }}</td>
+          <td><span class="badge bg-light border">{{ vente.get_mode_paiement_display }}</span></td>
+          <td class="text-end">{{ vente.total|ariary }}</td>
+          <td class="text-end fw-semibold">{{ vente.net|ariary }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="skeleton-empty">Aucune vente sur la période.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
